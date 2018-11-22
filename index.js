@@ -11,6 +11,7 @@ module.exports = function RenderTimeline(sssb) {
   setStyle(`
     .tre-finder {
       margin-bottom: -1px;
+      overflow-x: auto;
     }
     .tre-finder li.drag-wrap {
       padding: 0;

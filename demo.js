@@ -11,6 +11,7 @@ setStyle(`
   }
   .tre-finder {
     max-width: 300px;
+    padding: 0;
   }
   body {
     font-family: sans-serif;
@@ -20,6 +21,9 @@ setStyle(`
     margin-top: 0;
     margin-bottom: 0;
   }
+  .pane ::-webkit-scrollbar {
+    height: 0px;
+  }
   .pane {
     display: grid;
     grid-template-columns: 10em auto;
@@ -28,6 +32,8 @@ setStyle(`
     background: gold;
     width: 100%;
     height: min-content;
+    max-height: 8em;
+    overflow-y: auto;
   }
 `)
 
