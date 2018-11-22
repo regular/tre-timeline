@@ -20,10 +20,6 @@ setStyle(`
     margin-top: 0;
     margin-bottom: 0;
   }
-  .tre-finder li.drag-wrap {
-    padding-top: .2em;
-    padding-bottom: 0;
-  }
   .pane {
     display: grid;
     grid-template-columns: 10em auto;

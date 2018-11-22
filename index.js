@@ -9,15 +9,32 @@ const debounce = require('debounce')
 module.exports = function RenderTimeline(sssb) {
   
   setStyle(`
-    .tre-finder li {
+    .tre-finder {
+      margin-bottom: -1px;
+    }
+    .tre-finder li.drag-wrap {
+      padding: 0;
+      margin: 0;
+    }
+    .tre-finder summary {
+      border-bottom: 1px solid silver;
       white-space: nowrap;
     }
+    .tre-finder [data-key] {
+      height: 100%;
+      display: inline-block;
+      padding: 1px;
+      padding-top: 2px;
+    }
+    .tre-finder .summary {
+      padding-bottom: 1px;
+    }
     .tre-timeline .tracks {
+      font-size: smaller;
       display: grid;
       gap: 1px;
-      //grid-template-columns: repeat(auto-fill, 1em);
-      grid-auto-rows: minmax(1em, 1fr);
-      grid-auto-flow: row;
+      grid-template-columns: 10em repeat(auto-fill, 1em);
+      grid-template-rows: repeat(auto-fill, 1fr);
       place-content: stretch;
       width: 100%;
       height: 100%;
@@ -36,8 +53,15 @@ module.exports = function RenderTimeline(sssb) {
     const scan = debounce(function() {
       console.log('Scan')
       const els = tree_element.querySelectorAll('[data-key]')
-      tracks.set(els)
-      console.log(els)
+      let row = -1
+      const arr = [].slice.apply(els).map( el => {
+        row++
+        return {
+          row,
+          key: el.getAttribute('data-key')
+        }
+      })
+      tracks.set(arr)
     }, 10)
 
     const drain = pull.drain( record => {
@@ -53,8 +77,24 @@ module.exports = function RenderTimeline(sssb) {
 
     pull(dom_mutants(tree_element, {subtree: true}), drain)
 
-    function renderTrack(el) {
-      return h('.track', el.getAttribute('data-key'))
+    function renderTrack({row, key}) {
+      return [
+        h('.track-control', {
+          style: {
+            'grid-row': `${row + 1} / span 1`,
+            'grid-column': '1 / span 1',
+            background: 'magenta',
+            'place-self': 'stretch'
+          }
+        }, key.substr(0,6)),
+        h('.keyframe', {
+          style: {
+            background: 'cyan',
+            'grid-row': `${row + 1} / span 1`,
+            'grid-column': `${row + 2} / span 1`
+          }
+        })
+      ]
     }
     
     return h('.tre-timeline', {
