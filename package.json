@@ -19,6 +19,8 @@
   "homepage": "https://github.com/regular/tre-timeline#readme",
   "dependencies": {
     "debounce": "^1.2.0",
+    "get-properties-from-schema": "^1.0.0",
+    "json8-pointer": "^0.7.1",
     "module-styles": "^1.0.0",
     "mutant": "^3.22.1",
     "pull-dom-mutants": "^1.0.1",
@@ -28,11 +30,15 @@
     "plugins": {
       "tre-client": true,
       "ssb-revisions": true
+    },
+    "prototypes": {
+      "tre-transforms": true
     }
   },
   "devDependencies": {
     "ssb-revisions": "^1.0.1",
     "tre-client": "^1.1.0",
-    "tre-finder": "^2.0.0"
+    "tre-finder": "^2.0.0",
+    "tre-transforms": "^1.7.0"
   }
 }

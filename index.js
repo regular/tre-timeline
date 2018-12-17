@@ -18,14 +18,27 @@ module.exports = function RenderTimeline(sssb) {
       margin: 0;
     }
     .tre-finder summary {
-      border-bottom: 1px solid silver;
       white-space: nowrap;
     }
-    .tre-finder [data-key] {
+    .tre-finder summary, .tre-finder summary * {
+      vertical-align: top;
+    }
+    .tre-finder summary > [data-key] > .summary {
+      border-bottom: 1px solid silver;
+    }
+    .tre-finder summary>span[data-key] {
       height: 100%;
       display: inline-block;
       padding: 1px;
       padding-top: 2px;
+      width: fit-content;
+      margin: 0;
+    }
+    .tre-finder [data-schema-name] {
+      height: 100%;
+      padding: 1px;
+      padding-top: 2px;
+      border-top: 1px solid silver;
     }
     .tre-finder .summary {
       padding-bottom: 1px;
@@ -53,13 +66,15 @@ module.exports = function RenderTimeline(sssb) {
 
     const scan = debounce(function() {
       console.log('Scan')
-      const els = tree_element.querySelectorAll('[data-key]')
+      let els = tree_element.querySelectorAll('[data-key], [data-schema-path]')
+      //els = Array.from(els).filter( x => !not_els.includes(x))
       let row = -1
       const arr = [].slice.apply(els).map( el => {
         row++
         return {
           row,
-          key: el.getAttribute('data-key')
+          key: el.getAttribute('data-key') || el.closest('[data-key]').getAttribute('data-key'),
+          path: el.getAttribute('data-schema-path')
         }
       })
       tracks.set(arr)
@@ -78,7 +93,7 @@ module.exports = function RenderTimeline(sssb) {
 
     pull(dom_mutants(tree_element, {subtree: true}), drain)
 
-    function renderTrack({row, key}) {
+    function renderTrack({row, key, path}) {
       return [
         h('.track-control', {
           style: {
@@ -87,7 +102,7 @@ module.exports = function RenderTimeline(sssb) {
             background: 'magenta',
             'place-self': 'stretch'
           }
-        }, key.substr(0,6)),
+        }, key.substr(0,6) + (path || '') ),
         h('.keyframe', {
           style: {
             background: 'cyan',
