@@ -167,15 +167,9 @@ function RenderTimeline(sssb) {
     }, 10)
 
     const drain = pull.drain( record => {
-      console.log(record)
+      //console.log(record)
       scan()
     })
-
-    function abort() {
-      console.log('timeline abort')
-      scan.clear()
-      drain.abort()
-    }
 
     pull(dom_mutants(tree_element, {subtree: true}), drain)
 
@@ -204,54 +198,94 @@ function RenderTimeline(sssb) {
             e.target.classList.remove('hover')
           }
           */
-        }),
+        })
+        /*
         h('.keyframe', {
           style: {
             'grid-row': `${row + 1} / span 1`,
             'grid-column': `${row + 2} / span 1`
           }
         })
+        */
       ]
     }
 
-    function frameSlots(grid, last, gridRowObs) {
-      console.warn('frameSlots')
+    function calcColumnCount(grid) {
+      const last = grid.querySelector('.lastFrameSlot')
       const lastbb = last.getBoundingClientRect()
       const gridbb = grid.getBoundingClientRect()
       const trackCtrl = grid.querySelector('.track-control')
       const ctrlbb = trackCtrl.getBoundingClientRect()
       const gap = Number(grid.computedStyleMap().get('grid-column-gap').toString().replace('px',''))
+      return Math.floor((gridbb.width - ctrlbb.width) / (lastbb.width + gap))
+    }
 
-      const frameCount = (gridbb.width - ctrlbb.width) / (lastbb.width + gap)
+    function frameSlots(frameCount, gridRowObs) {
+      const els = []
       for(let frame=0; frame<frameCount; ++frame) {
         const frameSlot = h('.frameSlot', {
+          classList: ctx.columnClasses ? ctx.columnClasses(frame) : [],
           style: {
             'grid-column': `${frame + 2} / span 1`,
             'grid-row': gridRowObs
           }
         }, frame % 5 ? [] : frame)
-        grid.appendChild(frameSlot)
+        els.push(frameSlot)
       }
+      return els
     }
 
+    const width = Value()
+    const resizeObserver = new ResizeObserver(entries => {
+      width.set(entries[0].contentRect.width)
+    })
+
+    function abort() {
+      scan.clear()
+      drain.abort()
+      resizeObserver.disconnect()
+    }
+
+    let grid
     const gridRowObs = computed(tracks, t => `1 / ${t.length + 1}`)
     const hasTracks = computed(tracks, t => !!t.length)
-    let grid, lastFrameSlot, addedFrameSlots = false
+    const columnCount = computed([hasTracks, width], (t, w) => {
+      console.log('width:', w)
+      return t ? calcColumnCount(grid) : 0
+    })
     const el = h('.tre-timeline', {
-      hooks: [el => abort]
+      hooks: [el => abort],
+      'ev-click': e => {
+        const rowGap = Number(grid.computedStyleMap().get('grid-row-gap').toString().replace('px',''))
+        const trackCtrl = grid.querySelector('.track-control')
+        const ctrlbb = trackCtrl.getBoundingClientRect()
+        const track = Math.floor(e.offsetY / (ctrlbb.height + rowGap))
+        const frame = Number(e.target.style['grid-column-start']) - 2
+        console.warn('click', frame, track)
+        el.dispatchEvent(new CustomEvent('timeline-click', {
+          bubbles: true,
+          detail: {
+            frame,
+            track,
+            trackInfo: tracks()[track]
+          }
+        }))
+      }
     }, [
       grid = h('.tracks', [
         MutantMap(tracks, renderTrack),
-        lastFrameSlot = h('.lastFrameSlot', {
+        h('.lastFrameSlot', {
           style: {
             'grid-column': '-2 / span 1',
             'grid-row': gridRowObs
           }
         }),
-        computed(hasTracks, t => t ? frameSlots(grid, lastFrameSlot, gridRowObs) : [])
+        computed(columnCount, cols => cols ? frameSlots(cols, gridRowObs) : []),
+        ctx.items || []
       ]),
     ])
 
+    resizeObserver.observe(el)
     return el
   }
 
