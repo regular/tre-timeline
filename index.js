@@ -148,19 +148,18 @@ function RenderTimeline(sssb) {
   return function renderTimeline(kv, ctx) {
     ctx = ctx || {}
     const {tree_element} = ctx
-    const tracks = MutantArray()
+    const tracks = ctx.tracksObs || MutantArray()
 
     const scan = debounce(function() {
-      console.log('Scan')
       let els = tree_element.querySelectorAll('[data-key], [data-schema-path]')
-      //els = Array.from(els).filter( x => !not_els.includes(x))
       let row = -1
       const arr = [].slice.apply(els).map( el => {
         row++
         return {
           row,
           key: el.getAttribute('data-key') || el.closest('[data-key]').getAttribute('data-key'),
-          path: el.getAttribute('data-schema-path')
+          path: el.getAttribute('data-schema-path'),
+          type: el.getAttribute('data-schema-type')
         }
       })
       tracks.set(arr)
@@ -173,7 +172,8 @@ function RenderTimeline(sssb) {
 
     pull(dom_mutants(tree_element, {subtree: true}), drain)
 
-    function renderTrack({row, key, path}) {
+    function renderTrack(track) {
+      const {row, key, path} = track
       return [
         h('.track-control', {
           style: {
@@ -182,7 +182,7 @@ function RenderTimeline(sssb) {
             background: 'magenta',
             'place-self': 'stretch'
           }
-        }, key.substr(0,6) + (path || '') ),
+        }, ctx.renderTrackControls ? ctx.renderTrackControls(track) :  key.substr(0,6) + (path || '') ),
         h('.track-bg', {
           style: {
             'grid-row': `${row + 1} / span 1`,
@@ -250,7 +250,7 @@ function RenderTimeline(sssb) {
     const gridRowObs = computed(tracks, t => `1 / ${t.length + 1}`)
     const hasTracks = computed(tracks, t => !!t.length)
     const columnCount = computed([hasTracks, width], (t, w) => {
-      console.log('width:', w)
+      //console.log('width:', w)
       return t ? calcColumnCount(grid) : 0
     })
     const el = h('.tre-timeline', {
