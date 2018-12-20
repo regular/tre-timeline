@@ -5,6 +5,7 @@ const MutantArray = require('mutant/array')
 const MutantMap = require('mutant/map')
 const computed = require('mutant/computed')
 const Value = require('mutant/value')
+const watchAll = require('mutant/watch-all')
 const setStyle = require('module-styles')('tre-timeline')
 const debounce = require('debounce')
 const getProperties = require('get-properties-from-schema')
@@ -114,8 +115,7 @@ function RenderTimeline(sssb) {
       font-size: smaller;
       display: grid;
       gap: 1px;
-      grid-template-columns: 10em repeat(auto-fill, 1em);
-      grid-template-rows: repeat(auto-fill, 1fr);
+      //grid-template-columns: 10em repeat(auto-fill, 1em);
       place-content: stretch;
       width: 100%;
       height: 100%;
@@ -149,6 +149,7 @@ function RenderTimeline(sssb) {
     ctx = ctx || {}
     const {tree_element} = ctx
     const tracks = ctx.tracksObs || MutantArray()
+    const cellWidthObs = ctx.cellWidthObs || Value(1)
 
     const scan = debounce(function() {
       let els = tree_element.querySelectorAll('[data-key], [data-schema-path]')
@@ -240,19 +241,24 @@ function RenderTimeline(sssb) {
       width.set(entries[0].contentRect.width)
     })
 
+    let grid
+    const gridRowObs = computed(tracks, t => `1 / ${t.length + 1}`)
+    const hasTracks = computed(tracks, t => !!t.length)
+    const columnCount = Value(0)
+    const setColumnCount= debounce(function() {
+      columnCount.set(calcColumnCount(grid))
+    }, 20)
+    const unwatchColumnCount =  watchAll([hasTracks, width, cellWidthObs], t => {
+      if (t) setColumnCount()
+    })
+
     function abort() {
       scan.clear()
       drain.abort()
       resizeObserver.disconnect()
+      unwatchColumnCount()
     }
 
-    let grid
-    const gridRowObs = computed(tracks, t => `1 / ${t.length + 1}`)
-    const hasTracks = computed(tracks, t => !!t.length)
-    const columnCount = computed([hasTracks, width], (t, w) => {
-      //console.log('width:', w)
-      return t ? calcColumnCount(grid) : 0
-    })
     const el = h('.tre-timeline', {
       hooks: [el => abort],
       'ev-click': e => {
@@ -272,7 +278,11 @@ function RenderTimeline(sssb) {
         }))
       }
     }, [
-      grid = h('.tracks', [
+      grid = h('.tracks', {
+        style: {
+          'grid-template-columns': computed(cellWidthObs, w => {return `10em repeat(auto-fill, ${w}em)`})
+        }
+      }, [
         MutantMap(tracks, renderTrack),
         h('.lastFrameSlot', {
           style: {
