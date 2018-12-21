@@ -150,6 +150,7 @@ function RenderTimeline(sssb) {
     const {tree_element} = ctx
     const tracks = ctx.tracksObs || MutantArray()
     const cellWidthObs = ctx.cellWidthObs || Value(1)
+    const columnCount = ctx.columnCountObs || Value(0)
 
     const scan = debounce(function() {
       let els = tree_element.querySelectorAll('[data-key], [data-schema-path]')
@@ -244,7 +245,6 @@ function RenderTimeline(sssb) {
     let grid
     const gridRowObs = computed(tracks, t => `1 / ${t.length + 1}`)
     const hasTracks = computed(tracks, t => !!t.length)
-    const columnCount = Value(0)
     const setColumnCount= debounce(function() {
       columnCount.set(calcColumnCount(grid))
     }, 20)
@@ -266,12 +266,12 @@ function RenderTimeline(sssb) {
         const trackCtrl = grid.querySelector('.track-control')
         const ctrlbb = trackCtrl.getBoundingClientRect()
         const track = Math.floor(e.offsetY / (ctrlbb.height + rowGap))
-        const frame = Number(e.target.style['grid-column-start']) - 2
-        console.warn('click', frame, track)
+        const column = Number(e.target.style['grid-column-start']) - 2
+        console.warn('click', column, track)
         el.dispatchEvent(new CustomEvent('timeline-click', {
           bubbles: true,
           detail: {
-            frame,
+            column,
             track,
             trackInfo: tracks()[track]
           }
